@@ -7,9 +7,8 @@
 <style>
   html, body { margin: 0; height: 100%; background: #000; color: #fff;
                font-family: system-ui, sans-serif; }
-  body { display: flex; flex-direction: column; align-items: center;
-         justify-content: center; }
-  img { max-width: 100%; max-height: calc(100% - 44px); object-fit: contain; }
+  body { display: flex; align-items: center; justify-content: center; }
+  img { max-width: 100%; max-height: 100%; object-fit: contain; }
   p { margin: 8px 12px; text-align: center; font-size: 14px; }
   a { color: lightblue; }
 </style>
@@ -18,7 +17,6 @@
 <script>
   const FEED = "https://science.nasa.gov/feed/apod-basic/";
   const CACHE_KEY = "apod-cache-v2";
-  // Try the feed directly first, then through free CORS proxies if the browser blocks it
   const ROUTES = [
     u => u,
     u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
@@ -45,32 +43,27 @@
           const m = tagText(item, "content:encoded").match(/<img[^>]+src="([^"]+)"/i);
           if (m) img = m[1];
         }
-        return {
-          title: tagText(item, "title"),
-          link: tagText(item, "link"),
-          img: img
-        };
+        return { title: tagText(item, "title"), link: tagText(item, "link"), img: img };
       } catch (e) { lastErr = e; }
     }
     throw lastErr;
   }
 
-  function show(d, note) {
+  function show(d) {
     document.body.innerHTML = "";
-    if (d.img) {
-      const img = document.createElement("img");
-      img.src = d.img;
-      img.alt = d.title;
-      img.onerror = () => {
-        document.body.innerHTML =
-          `<p>Couldn't load the image. <a href="${d.link}" target="_blank">View on APOD</a></p>`;
-      };
-      document.body.appendChild(img);
+    if (!d.img) {
+      document.body.innerHTML =
+        `<p>Today's APOD has no image (it may be a video). <a href="${d.link}" target="_blank">View on APOD</a></p>`;
+      return;
     }
-    const cap = document.createElement("p");
-    cap.innerHTML = `<a href="${d.link}" target="_blank">${d.title}</a>` +
-                    (note ? ` <em>(${note})</em>` : "");
-    document.body.appendChild(cap);
+    const img = document.createElement("img");
+    img.src = d.img;
+    img.alt = d.title;
+    img.onerror = () => {
+      document.body.innerHTML =
+        `<p>Couldn't load the image. <a href="${d.link}" target="_blank">View on APOD</a></p>`;
+    };
+    document.body.appendChild(img);
   }
 
   loadLatest()
@@ -82,7 +75,7 @@
       console.error(err);
       let old = null;
       try { old = JSON.parse(localStorage.getItem(CACHE_KEY)); } catch (e) {}
-      if (old) show(old, "showing last saved picture");
+      if (old) show(old);
       else document.body.innerHTML =
         `<p>Error loading APOD. <a href="https://science.nasa.gov/apod/" target="_blank">Open APOD</a></p>`;
     });
